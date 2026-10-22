@@ -94,10 +94,8 @@ class Args:
         "none",
         "pearson",
         "k3",
-        "tanh",
         "gaussian",
         "mixture_gaussian",
-        "op_mixture_gaussian",
     ] = "none"
     """trust-term type for policy optimization"""
     model_arch: Literal["mlp", "simba"] = "simba"
@@ -669,24 +667,11 @@ if __name__ == "__main__":
                         trust_penalty = 0.5 * (ratio - 1.0) ** 2
                     elif args.trust_type == "k3":
                         trust_penalty = ratio * logratio - ratio + 1.0
-                    elif args.trust_type == "tanh":
-                        trust_penalty = torch.log(torch.cosh(ratio - 1.0))
                     elif args.trust_type == "gaussian":
                         trust_penalty = 0.5 * (1.0 - torch.exp(-(ratio - 1.0) ** 2))
                     elif args.trust_type == "mixture_gaussian":
                         behavior_logprob = b_logprobs[mb_inds]
                         old_logprob_stack = mixture_old_logprobs_tensor[:, mb_inds]
-                        ratio_stack = torch.exp(newlogprob.unsqueeze(0) - old_logprob_stack)
-                        gaussian_stack = 0.5 * (1.0 - torch.exp(-(ratio_stack - 1.0) ** 2))
-                        is_weight_stack = torch.exp(old_logprob_stack - behavior_logprob.unsqueeze(0))
-                        trust_penalty = (is_weight_stack * gaussian_stack).mean(dim=0)
-                    elif args.trust_type == "op_mixture_gaussian":
-                        behavior_logprob = b_logprobs[mb_inds]
-                        if len(epoch_old_logprob_bank) == 0:
-                            old_logprob_stack = torch.stack([behavior_logprob, behavior_logprob], dim=0)
-                        else:
-                            prev_epoch_logprob = epoch_old_logprob_bank[-1][mb_inds]
-                            old_logprob_stack = torch.stack([behavior_logprob, prev_epoch_logprob], dim=0)
                         ratio_stack = torch.exp(newlogprob.unsqueeze(0) - old_logprob_stack)
                         gaussian_stack = 0.5 * (1.0 - torch.exp(-(ratio_stack - 1.0) ** 2))
                         is_weight_stack = torch.exp(old_logprob_stack - behavior_logprob.unsqueeze(0))
